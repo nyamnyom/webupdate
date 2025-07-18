@@ -8,9 +8,9 @@
 <a href="{{ url('/admin/barang/create') }}">+ Tambah Barang</a> | 
 <a href="{{ url('/admin/barang/paket/create') }}">+ Tambah Paket</a>
 
-@if(session('success'))
+{{-- @if(session('success'))
     <p style="color: green;">{{ session('success') }}</p>
-@endif
+@endif --}}
 
 <table border="1" cellpadding="5" cellspacing="0">
     <thead>

@@ -1,10 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Admin Panel - @yield('title')</title>
-
-    <!-- Select2 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <title>User Panel - @yield('title')</title>
 
     <style>
         body {
@@ -16,7 +13,7 @@
         .sidebar {
             width: 220px;
             height: 100vh;
-            background: #007bff;
+            background: #28a745;
             color: white;
             position: fixed;
             top: 0;
@@ -41,7 +38,7 @@
         }
 
         .sidebar a:hover {
-            background: #0056b3;
+            background: #1e7e34;
         }
 
         .sidebar a.logout {
@@ -65,24 +62,18 @@
 <body>
 
 <div class="sidebar">
-    <h2>Admin Menu</h2>
-    <a href="{{ url('/admin/menu') }}">Manajemen Barang</a>
-    <a href="{{ url('/admin/penjualan') }}">Riwayat Penjualan</a>
-    <a href="{{ url('/admin/pegawai') }}">Manajemen Pegawai</a>
-    <a href="{{ url('/admin/history') }}">History Log</a>
-    <a href="{{ url('/admin/log-barang') }}">Log Interaksi Barang</a>
+    <h2>User Menu</h2>
+    
+    <a href="{{ url('/user/stok') }}">Manajemen Barang</a>
+    <a href="{{ url('/user/nota') }}">Buat Nota</a>
+    <a href="{{ url('/user/retur') }}">Retur Barang</a>
+    <a href="{{ url('/user/pelunasan') }}">Pelunasan</a>
     <a href="{{ url('/logout') }}" class="logout">Log Out</a>
 </div>
 
 <div class="content">
     @yield('content')
 </div>
-
-<!-- jQuery + Select2 JS -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-@yield('scripts')
 
 </body>
 </html>

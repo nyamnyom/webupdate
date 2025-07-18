@@ -68,7 +68,7 @@
     <h2>Admin Menu</h2>
     <a href="{{ url('/admin/barang') }}">Manajemen Barang</a>
     <a href="{{ url('/admin/penjualan') }}">Riwayat Penjualan</a>
-    <a href="{{ url('/admin/pegawai') }}">Manajemen Pegawai</a>
+    <a href="{{ url('/admin/user') }}">Manajemen Pegawai</a>
     <a href="{{ url('/admin/user-activity') }}">History Log</a>
     <a href="{{ url('/admin/log-barang') }}">Log Interaksi Barang</a>
     <a href="{{ url('/logout') }}" class="logout">Log Out</a>

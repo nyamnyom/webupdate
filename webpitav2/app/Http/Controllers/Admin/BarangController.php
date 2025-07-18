@@ -132,7 +132,8 @@ $this->logActivity("Mengupdate barang dengan ID: {$id}, Nama: {$request->nama}")
 
     // Hapus barang
     DB::table('barang')->where('id', $id)->delete();
-$this->logActivity("Menghapus barang/paket dengan ID: {$id}, Nama: {$barang->nama}");
+    $this->logBarang($id, $barang->nama, 'Barang dihapus', 0, 0, 0);
+    $this->logActivity("Menghapus barang/paket dengan ID: {$id}, Nama: {$barang->nama}");
     return redirect('/admin/barang')->with('success', 'Barang berhasil dihapus');
 }
 

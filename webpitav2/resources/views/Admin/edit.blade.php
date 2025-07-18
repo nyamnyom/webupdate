@@ -18,11 +18,7 @@
     <label>Harga:</label><br>
     <input type="number" name="harga" value="{{ $barang->harga }}" required><br>
 
-    <label>Tipe:</label><br>
-    <select name="tipe" required>
-        <option value="barang" {{ $barang->tipe == 'barang' ? 'selected' : '' }}>Barang</option>
-        <option value="paket" {{ $barang->tipe == 'paket' ? 'selected' : '' }}>Paket</option>
-    </select><br><br>
+    
 
     <button type="submit">Update</button>
 </form>
