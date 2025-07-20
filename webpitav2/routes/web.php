@@ -15,7 +15,7 @@ use App\Http\Controllers\User\NotaController;
 use App\Http\Controllers\User\ReturController;
 use App\Http\Controllers\User\PelunasanController;
 use App\Http\Controllers\User\StokController;
-
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -70,7 +70,25 @@ Route::get('/admin/user-activity', [UserActivityController::class, 'index']);
 
 // USER
 Route::get('/user/dashboard', [UserDashboardController::class, 'index']);
-Route::resource('/user/nota', NotaController::class);
+
+
+Route::get('/user/order', [NotaController::class, 'form']);
+Route::post('/user/order', [NotaController::class, 'submit']);
+Route::get('/api/barang/{id}', function ($id) {
+    $barang = DB::table('barang')->where('ID', $id)->first();
+    if (!$barang) {
+        return response()->json(['error' => 'Barang tidak ditemukan'], 404);
+    }
+    return response()->json([
+        'id' => $barang->ID,
+        'nama' => $barang->nama,
+        'harga' => $barang->harga
+    ]);
+});
+Route::get('/api/order-search', [NotaController::class, 'barangAutocomplete']);
+
+
+
 Route::resource('/user/retur', ReturController::class);
 Route::resource('/user/pelunasan', PelunasanController::class);
 

@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>User Panel - @yield('title')</title>
-
+{{-- <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" /> --}}
     <style>
         body {
             margin: 0;
@@ -65,7 +65,7 @@
     <h2>User Menu</h2>
     
     <a href="{{ url('/user/stok') }}">Manajemen Barang</a>
-    <a href="{{ url('/user/nota') }}">Buat Nota</a>
+    <a href="{{ url('user/order') }}">Buat Nota</a>
     <a href="{{ url('/user/retur') }}">Retur Barang</a>
     <a href="{{ url('/user/pelunasan') }}">Pelunasan</a>
     <a href="{{ url('/logout') }}" class="logout">Log Out</a>
@@ -74,6 +74,6 @@
 <div class="content">
     @yield('content')
 </div>
-
+@yield('scripts')
 </body>
 </html>

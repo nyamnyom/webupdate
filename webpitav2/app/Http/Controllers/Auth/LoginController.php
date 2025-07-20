@@ -26,9 +26,9 @@ class LoginController extends Controller
     if ($user && $request->password === $user->password) {
         Session::put('user_id', $user->id);
         Session::put('username', $user->username);
-        Session::put('role', $user->role);
+        Session::put('role', $user->ROLE);
 
-        if ($user->role === 'admin') {
+        if ($user->ROLE === 'admin') {
             return redirect('/admin/dashboard');
         } else {
             return redirect('/user/dashboard');
