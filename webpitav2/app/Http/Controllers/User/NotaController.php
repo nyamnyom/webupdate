@@ -52,16 +52,15 @@ class NotaController extends Controller
             $total += $harga_diskon * $item['jumlah'];
         }
 
-        $htrans_id = DB::table('htrans')->insertGetId([
+        $htrans_id = DB::table('nota')->insertGetId([
             'total' => $total,
             'nokiriman' => $request->nokiriman,
-            'status' => 'terkirim',
-            'dibuat_oleh' => $username,
-            'dari_toko' => $request->dari_toko,
+            'user_id' => $username,
+            'toko_id' => $request->dari_toko,
             'pengerja' => $request->pengerja,
-            'tanggal' => $request->filled('tanggal') ? $request->tanggal : now(),
-            'created_at' => now(),
-            'updated_at' => now()
+            'created_at' => $request->filled('tanggal') ? $request->tanggal : now(),
+            
+           
         ]);
 
         foreach ($items as $item) {
@@ -70,20 +69,23 @@ class NotaController extends Controller
             $harga_diskon = $item['harga'] * (1 - $diskon / 100);
             $subtotal = $harga_diskon * $item['jumlah'];
 
-            DB::table('dtrans')->insert([
-                'htrans_id' => $htrans_id,
+            DB::table('nota_detail')->insert([
+                'nota_id' => $htrans_id,
                 'barang' => $barang->nama,
                 'qty' => $item['jumlah'],
                 'harga' => $item['harga'],
                 'diskon' => $diskon,
                 'subtotal' => $subtotal,
-                'created_at' => now(),
-                'updated_at' => now()
+                
             ]);
 
             // Kurangi stok barang (simple version, tanpa paket handling)
             DB::table('barang')->where('id', $item['id'])->decrement('stok', $item['jumlah']);
-
+            DB::table('user_activity_log')->insert([
+                'user_id' => session('user_id'),
+                'aktivitas' => "input order barang {$barang->nama} x{$item['jumlah']} dari toko: {$request->dari_toko}, No Kiriman: {$request->nokiriman}",
+                'created_at' => now()
+            ]);
             $this->logBarang(
                 $item['id'],
                 $barang->nama,
@@ -93,7 +95,7 @@ class NotaController extends Controller
             );
         }
 
-        return redirect('/user/barang')->with('success', 'Order berhasil diproses');
+        return redirect('/user/order')->with('success', 'Order berhasil diproses');
     }
 
     public function barangAutocomplete(Request $request)

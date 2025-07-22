@@ -90,7 +90,7 @@ public function destroy($id)
     }
 
     DB::table('user')->where('id', $id)->delete();
-    $this->logActivity("Menghapus user dengan ID: {$id}");
+    
     return redirect('/admin/user')->with('success', 'User berhasil dihapus');
 }
 

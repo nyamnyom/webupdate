@@ -75,12 +75,12 @@ Route::get('/user/dashboard', [UserDashboardController::class, 'index']);
 Route::get('/user/order', [NotaController::class, 'form']);
 Route::post('/user/order', [NotaController::class, 'submit']);
 Route::get('/api/barang/{id}', function ($id) {
-    $barang = DB::table('barang')->where('ID', $id)->first();
+    $barang = DB::table('barang')->where('id', $id)->first();
     if (!$barang) {
         return response()->json(['error' => 'Barang tidak ditemukan'], 404);
     }
     return response()->json([
-        'id' => $barang->ID,
+        'id' => $barang->id,
         'nama' => $barang->nama,
         'harga' => $barang->harga
     ]);
@@ -89,9 +89,16 @@ Route::get('/api/order-search', [NotaController::class, 'barangAutocomplete']);
 
 
 
-Route::resource('/user/retur', ReturController::class);
-Route::resource('/user/pelunasan', PelunasanController::class);
+Route::get('/user/retur', [ReturController::class, 'index'])->name('user.retur');
+Route::post('/user/retur/simpan', [ReturController::class, 'simpan'])->name('user.retur.simpan');
 
+
+
+
+
+
+Route::get('/user/pelunasan', [PelunasanController::class, 'index'])->name('user.pelunasan.index');
+Route::post('/user/pelunasan/bayar', [PelunasanController::class, 'bayar'])->name('user.pelunasan.bayar');
 
 
 Route::resource('/user/stok', StokController::class);
