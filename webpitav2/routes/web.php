@@ -90,15 +90,13 @@ Route::get('/api/order-search', [NotaController::class, 'barangAutocomplete']);
 
 
 Route::get('/user/retur', [ReturController::class, 'index'])->name('user.retur');
-Route::post('/user/retur/simpan', [ReturController::class, 'simpan'])->name('user.retur.simpan');
+Route::post('/user/retur', [ReturController::class, 'submit'])->name('user.retur.submit');
 
 
 
+Route::get('/user/pelunasan', [PelunasanController::class, 'index'])->name('user.pelunasan');
+Route::post('/user/pelunasan/simpan', [PelunasanController::class, 'simpan'])->name('user.pelunasan.simpan');
 
-
-
-Route::get('/user/pelunasan', [PelunasanController::class, 'index'])->name('user.pelunasan.index');
-Route::post('/user/pelunasan/bayar', [PelunasanController::class, 'bayar'])->name('user.pelunasan.bayar');
 
 
 Route::resource('/user/stok', StokController::class);

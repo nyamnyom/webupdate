@@ -1,115 +1,137 @@
 @extends('layouts.user_layout')
-
 @section('title', 'Retur Barang')
 
 @section('content')
-<h2>Retur Barang</h2>
+<div class="container">
+    <h2>Form Retur Barang</h2>
 
-@if(session('success'))
-    <div style="color: green;">{{ session('success') }}</div>
-@endif
+    @if(session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @elseif(session('error'))
+        <div class="alert alert-danger">{{ session('error') }}</div>
+    @endif
 
-@if(session('error'))
-    <div style="color: red;">{{ session('error') }}</div>
-@endif
-
-<form method="GET" action="{{ url('/user/retur') }}">
-    <label for="toko_nama">Pilih Toko:</label>
-    <select name="toko_nama" id="toko_nama" class="select2" onchange="this.form.submit()">
-        <option value="">-- Cari Toko --</option>
-        @foreach($tokoList as $toko)
-            <option value="{{ $toko }}" {{ ($toko_nama == $toko) ? 'selected' : '' }}>{{ $toko }}</option>
-        @endforeach
-    </select>
-</form>
-
-@if($notaList)
-    <form method="GET" action="{{ url('/user/retur') }}">
-        <input type="hidden" name="toko_nama" value="{{ $toko_nama }}">
-        <label for="nokiriman">Pilih No Kiriman:</label>
-        <select name="nokiriman" id="nokiriman" class="select2" onchange="this.form.submit()">
-            <option value="">-- Cari No Kiriman --</option>
-            @foreach($notaList as $nota)
-                <option value="{{ $nota->nokiriman }}" {{ ($nokiriman == $nota->nokiriman) ? 'selected' : '' }}>{{ $nota->nokiriman }}</option>
+    <form method="GET" action="{{ route('user.retur') }}">
+        <label for="toko_nama">Pilih Toko:</label>
+        <select name="toko_nama" onchange="this.form.submit()">
+            <option value="">--Pilih--</option>
+            @foreach($tokoList as $toko)
+                <option value="{{ $toko->nama_toko }}" {{ $selectedToko == $toko->nama_toko ? 'selected' : '' }}>
+                    {{ $toko->nama_toko }}
+                </option>
             @endforeach
         </select>
-    </form>
-@endif
 
-@if($notaDetail)
-    <h3>Detail Nota: No Kiriman {{ $notaDetail->nokiriman }}</h3>
-
-    <table border="1" cellpadding="5" cellspacing="0">
-        <thead>
-            <tr>
-                <th>Barang</th>
-                <th>Qty</th>
-                <th>Harga</th>
-                <th>Diskon</th>
-                <th>Subtotal</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($barangList as $barang)
-                <tr>
-                    <td>{{ $barang->barang }}</td>
-                    <td>{{ $barang->qty }}</td>
-                    <td>Rp{{ number_format($barang->harga, 0, ',', '.') }}</td>
-                    <td>{{ $barang->diskon}}%</td>
-                    <td>Rp{{ number_format($barang->subtotal, 0, ',', '.') }}</td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
-
-    <hr>
-
-    <h3>Form Retur Barang</h3>
-    <form method="POST" action="{{ route('user.retur.simpan') }}">
-        @csrf
-        <input type="hidden" name="nota_id" value="{{ $notaDetail->id }}">
-
-        <table border="1" cellpadding="5" cellspacing="0">
-            <thead>
-                <tr>
-                    <th>Barang</th>
-                    <th>Qty Dibeli</th>
-                    <th>Qty Retur</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($barangList as $barang)
-                    <tr>
-                        <td>{{ $barang->barang }}</td>
-                        <td>{{ $barang->qty }}</td>
-                        <td>
-                            <input type="number" name="qty_retur[{{ $barang->barang }}]" min="0" max="{{ $barang->qty }}" value="0">
-                        </td>
-                    </tr>
+        @if($notaList)
+            <label for="nokiriman">No Kiriman:</label>
+            <select name="nokiriman" onchange="this.form.submit()">
+                <option value="">--Pilih--</option>
+                @foreach($notaList as $nota)
+                    <option value="{{ $nota->nokiriman }}" {{ $selectedNota == $nota->nokiriman ? 'selected' : '' }}>
+                        {{ $nota->nokiriman }}
+                    </option>
                 @endforeach
-            </tbody>
-        </table>
+            </select>
+        @endif
+    </form>
 
-        <label for="keterangan">Keterangan:</label>
-        <input type="text" name="keterangan" placeholder="Keterangan retur"><br><br>
+    @if($notaBarang)
+    <form method="POST" action="{{ route('user.retur.submit') }}">
+        @csrf
+        <input type="hidden" name="toko_nama" value="{{ $selectedToko }}">
+        <input type="hidden" name="nokiriman" value="{{ $selectedNota }}">
 
+        <h4>Barang dari Nota</h4>
+        @foreach($notaBarang as $i => $barang)
+        <div style="margin-bottom:10px;">
+            @php
+                $barangId = DB::table('barang')->where('nama', $barang->barang)->value('id');
+            @endphp
+            <input type="hidden" name="barang_id[]" value="{{ $barangId }}">
+            <input type="hidden" name="is_tambahan[]" value="0">
+            {{ $barang->barang }} - Qty Beli: {{ $barang->qty }}
+            <input type="number" step="0.01" name="qty[]" placeholder="Qty retur">
+        </div>
+        @endforeach
+
+        <hr>
+        <h4>Tambah Barang Lain</h4>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+            <div style="flex: 2; min-width: 200px;">
+                <label>Nama Barang:</label><br>
+                <select id="barang-select" class="form-control" style="width: 100%;">
+                    <option value="">-- Pilih Barang --</option>
+                    @foreach($semuaBarang as $barang)
+                        @php
+                            $sudahAda = collect($notaBarang)->pluck('barang')->contains($barang->nama);
+                        @endphp
+                        @if(!$sudahAda)
+                            <option value="{{ $barang->id }}">{{ $barang->nama }}</option>
+                        @endif
+                    @endforeach
+                </select>
+            </div>
+            <div style="flex: 1;">
+                <label>Qty:</label><br>
+                <input type="number" step="0.01" id="barang-qty" class="form-control">
+            </div>
+            <div style="flex: 0.5;">
+                <br>
+                <button type="button" onclick="addBarangTambahan()">Tambah</button>
+            </div>
+        </div>
+
+        <div id="barang-tambahan-container"></div>
+
+        <br>
         <button type="submit">Simpan Retur</button>
     </form>
-@endif
-@endsection
+    @endif
+</div>
 
-@section('scripts')
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+{{-- jQuery + Select2 --}}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
 $(document).ready(function() {
-    $('.select2').select2({
-        placeholder: 'Cari...',
-        allowClear: true,
+    $('#barang-select').select2({
+        placeholder: '-- Pilih Barang --',
         width: 'resolve'
     });
 });
+
+function addBarangTambahan() {
+    const select = document.getElementById('barang-select');
+    const qtyInput = document.getElementById('barang-qty');
+    const container = document.getElementById('barang-tambahan-container');
+
+    const barangId = select.value;
+    const barangNama = select.options[select.selectedIndex].text;
+    const qty = qtyInput.value;
+
+    if (!barangId || !qty || parseFloat(qty) <= 0) {
+        alert("Pilih barang dan masukkan qty yang valid.");
+        return;
+    }
+
+    const div = document.createElement('div');
+    div.innerHTML = `
+        <div style="margin-bottom:10px;">
+            ${barangNama} - Qty: ${qty}
+            <input type="hidden" name="barang_id[]" value="${barangId}">
+            <input type="hidden" name="qty[]" value="${qty}">
+            <input type="hidden" name="is_tambahan[]" value="1">
+        </div>
+    `;
+    container.appendChild(div);
+
+    // Reset input
+    select.selectedIndex = 0;
+    $('#barang-select').val(null).trigger('change');
+    qtyInput.value = "";
+}
 </script>
 @endsection

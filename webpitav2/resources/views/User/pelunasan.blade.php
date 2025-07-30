@@ -3,82 +3,76 @@
 @section('title', 'Pelunasan Nota')
 
 @section('content')
-<h2>Pelunasan Nota</h2>
+<div class="container-fluid">
+    <h2>Pelunasan Nota</h2>
 
-@if(session('success'))
-    <div style="color: green;">{{ session('success') }}</div>
-@endif
+    @if(session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @elseif(session('error'))
+        <div class="alert alert-danger">{{ session('error') }}</div>
+    @endif
 
-@if(session('error'))
-    <div style="color: red;">{{ session('error') }}</div>
-@endif
-
-<form method="GET" action="{{ url('/user/pelunasan') }}">
-    <label for="toko_nama">Pilih Nama Toko:</label>
-    <select name="toko_nama" id="toko_nama" onchange="this.form.submit()">
-        <option value="">-- Pilih Toko --</option>
-        @foreach($tokoList as $toko)
-            <option value="{{ $toko }}" {{ ($toko_nama == $toko) ? 'selected' : '' }}>{{ $toko }}</option>
-        @endforeach
-    </select>
-</form>
-
-@if($toko_nama)
-    <div style="margin: 10px 0;">
-        <label for="tanggal_global">Tanggal Pelunasan:</label>
-        <input type="date" id="tanggal_global" value="{{ date('Y-m-d') }}">
-    </div>
-@endif
-
-@if(count($notaList) > 0)
-    <table border="1" cellpadding="5" cellspacing="0">
-        <thead>
-            <tr>
-                <th>ID Nota</th>
-                <th>No Kiriman</th>
-                <th>Total</th>
-                <th>Status</th>
-                <th>Tanggal</th>
-                <th>Pelunasan</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($notaList as $nota)
-                <tr>
-                    <td>{{ $nota->id }}</td>
-                    <td>{{ $nota->nokiriman }}</td>
-                    <td>{{ number_format($nota->total, 0) }}</td>
-                    <td>{{ $nota->status }}</td>
-                    <td>{{ $nota->created_at }}</td>
-                    <td>
-                        <form method="POST" action="{{ route('user.pelunasan.bayar') }}" class="form-pelunasan">
-                            @csrf
-                            <input type="hidden" name="nota_id" value="{{ $nota->id }}">
-                            <input type="hidden" name="tanggal_bayar" class="input-tanggal">
-                            <button type="submit">Tandai Lunas</button>
-                        </form>
-                    </td>
-                </tr>
+    <form method="GET" action="{{ url('/user/pelunasan') }}">
+        <label for="toko_nama">Pilih Toko:</label>
+        <select name="toko_nama" onchange="this.form.submit()">
+            <option value="">--Pilih--</option>
+            @foreach($tokoList as $toko)
+                <option value="{{ $toko->nama_toko }}" {{ $selectedToko == $toko->nama_toko ? 'selected' : '' }}>
+                    {{ $toko->nama_toko }}
+                </option>
             @endforeach
-        </tbody>
-    </table>
-@else
-    <p>Tidak ada nota belum lunas untuk toko ini.</p>
-@endif
+        </select>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const globalDateInput = document.getElementById('tanggal_global');
-    const forms = document.querySelectorAll('.form-pelunasan');
+        @if($notaList)
+            <label for="nokiriman">No Kiriman:</label>
+            <select name="nokiriman" onchange="this.form.submit()">
+                <option value="">--Pilih--</option>
+                @foreach($notaList as $nota)
+                    <option value="{{ $nota->nokiriman }}" {{ $selectedNota == $nota->nokiriman ? 'selected' : '' }}>
+                        {{ $nota->nokiriman }}
+                    </option>
+                @endforeach
+            </select>
+        @endif
+    </form>
+     {{-- Form Pelunasan --}}
+    @if($notaDetail)
+        <form method="POST" action="{{ route('user.pelunasan.simpan') }}">
+            @csrf
+            <input type="hidden" name="nota_id" value="{{ $notaDetail->id }}">
+            <input type="hidden" name="nokiriman" value="{{ $notaDetail->nokiriman }}">
 
-    forms.forEach(form => {
-        form.addEventListener('submit', function() {
-            const tanggalInput = form.querySelector('.input-tanggal');
-            if(globalDateInput) {
-                tanggalInput.value = globalDateInput.value;
-            }
-        });
-    });
-});
-</script>
+            <div class="mb-3">
+                <label>Total Nota:</label>
+                <input type="text" class="form-control" value="Rp {{ number_format($notaDetail->total, 0, ',', '.') }}" readonly>
+            </div>
+
+            <div class="mb-3">
+                <label>Total Dibayar:</label>
+                <input type="text" class="form-control" value="Rp {{ number_format($notaDetail->total_dibayar, 0, ',', '.') }}" readonly>
+            </div>
+
+            <div class="mb-3">
+                <label>Jumlah Bayar Sekarang:</label>
+                <input type="number" class="form-control" name="jumlah_bayar" required min="0" >
+            </div>
+
+            <div class="mb-3">
+                <label>Tanggal Bayar:</label>
+                <input type="date" class="form-control" name="tanggal_bayar" value="{{ date('Y-m-d') }}">
+            </div>
+
+            
+
+            <div class="mb-3">
+                <label>Catatan:</label>
+                <textarea name="catatan" class="form-control"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Simpan Pelunasan</button>
+        </form>
+    @endif
+
+   
+</div>
 @endsection

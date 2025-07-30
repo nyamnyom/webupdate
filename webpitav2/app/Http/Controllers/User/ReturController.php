@@ -9,110 +9,127 @@ use Illuminate\Support\Facades\DB;
 class ReturController extends Controller
 {
     public function index(Request $request)
-    {
-        $toko_nama = $request->input('toko_nama');
-        $nokiriman = $request->input('nokiriman');
+{
+    $tokoList = DB::table('toko')->get();
+    $selectedToko = $request->input('toko_nama');
+    $selectedNota = $request->input('nokiriman');
 
-        $tokoList = DB::table('toko')->pluck('nama_toko');
-        $notaList = [];
-        $notaDetail = null;
-        $barangList = [];
+    // Ambil toko_id dari nama toko
+    $toko = DB::table('toko')->where('nama_toko', $selectedToko)->first();
+    $tokoId = $toko->nama_toko ?? null;
 
-        if ($toko_nama) {
-            $notaList = DB::table('nota')
-                ->where('toko_id', $toko_nama)
-                ->where('status', '!=', 'retur')
+    // Hanya ambil nota yang status-nya 'belum lunas'
+    $notaList = $tokoId
+        ? DB::table('nota')
+            ->where('toko_id', $tokoId)
+            ->where('status', 'belum lunas')
+            ->get()
+        : [];
+
+    $notaBarang = [];
+    if ($selectedNota) {
+        $nota = DB::table('nota')->where('nokiriman', $selectedNota)->first();
+        if ($nota) {
+            $notaBarang = DB::table('nota_detail')
+                ->where('nota_id', $nota->id)
                 ->get();
         }
-
-        if ($toko_nama && $nokiriman) {
-            $notaDetail = DB::table('nota')
-                ->where('nokiriman', $nokiriman)
-                ->first();
-
-            if ($notaDetail) {
-                $barangList = DB::table('nota_detail')
-                    ->select('nota_detail.*')
-                    ->where('nota_detail.nota_id', $notaDetail->id)
-                    ->get();
-            }
-        }
-
-        return view('user.retur', compact('tokoList', 'notaList', 'toko_nama', 'nokiriman', 'notaDetail', 'barangList'));
     }
 
-    public function simpan(Request $request)
-    {
-        try {
-            $nota_id = $request->input('nota_id');
-            $qty_retur = $request->input('qty_retur');
-            $keterangan = $request->input('keterangan');
+    $semuaBarang = DB::table('barang')->get();
 
-            $nota = DB::table('nota')->where('id', $nota_id)->first();
-            if (!$nota) {
-                return redirect()->route('user.retur')->with('error', 'Nota tidak ditemukan.');
-            }
+    return view('user.retur', compact(
+        'tokoList',
+        'notaList',
+        'notaBarang',
+        'semuaBarang',
+        'selectedToko',
+        'selectedNota'
+    ));
+}
 
-            $userId = session('user_id') ?? 0;
 
-            $toko = DB::table('toko')->where('nama_toko', $nota->toko_id)->first();
+    public function submit(Request $request)
+{
+    $request->validate([
+        'toko_nama' => 'required',
+        'nokiriman' => 'required',
+        'barang_id.*' => 'required',
+        'qty.*' => 'required|numeric|min:0.01',
+    ]);
 
-            $total_retur = 0;
-            $retur_id = DB::table('retur')->insertGetId([
-                'nota_id' => $nota->id,
-                'nokiriman' => $nota->nokiriman,
-                'user_id' => $userId,
-                'nama_toko' => $toko->nama_toko ?? '-',
-                'total_retur' => 0,
-                'keterangan' => $keterangan,
-                'created_at' => now()
-            ]);
-
-            if ($qty_retur && is_array($qty_retur)) {
-                foreach ($qty_retur as $barang_nama => $qty) {
-                    if ($qty > 0) {
-                        $barang = DB::table('barang')->where('nama', $barang_nama)->first();
-                        $nota_detail = DB::table('nota_detail')
-                            ->where('nota_id', $nota_id)
-                            ->where('barang', $barang_nama)
-                            ->first();
-
-                        if ($barang && $nota_detail) {
-                            $diskon = $nota_detail->diskon ?? 0;
-                            $harga = $nota_detail->harga;
-                            $subtotal = $qty * $harga * (1 - $diskon / 100);
-                            $total_retur += $subtotal;
-
-                            DB::table('retur_detail')->insert([
-                                'retur_id' => $retur_id,
-                                'barang_id' => $barang->id,
-                                'qty' => $qty,
-                                'harga' => $harga,
-                                'subtotal' => $subtotal
-                            ]);
-
-                            DB::table('barang')->where('id', $barang->id)->increment('stok', $qty);
-                        }
-                    }
-                }
-            }
-
-            if ($total_retur > 0) {
-                DB::table('retur')->where('id', $retur_id)->update([
-                    'total_retur' => $total_retur
-                ]);
-
-                DB::table('nota')->where('id', $nota_id)->update([
-                    'status' => 'retur',
-                    'updated_at' => now()
-                ]);
-
-                return redirect()->route('user.retur')->with('success', 'Retur berhasil disimpan.');
-            } else {
-                return redirect()->route('user.retur')->with('error', 'Tidak ada qty retur yang diinput.');
-            }
-        } catch (\Exception $e) {
-            return redirect()->route('user.retur')->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
-        }
+    $nota = DB::table('nota')->where('nokiriman', $request->nokiriman)->first();
+    if (!$nota) {
+        return back()->with('error', 'Nota tidak ditemukan.');
     }
+
+    $returId = DB::table('retur')->insertGetId([
+        'nota_id' => $nota->id,
+        'nokiriman' => $request->nokiriman,
+        'user_id' => session('username') ?? 'unknown',
+        'nama_toko' => $request->toko_nama,
+        'total_retur' => 0,
+        'keterangan' => $request->keterangan ?? null,
+        'created_at' => now(),
+    ]);
+
+    $totalRetur = 0;
+    foreach ($request->barang_id as $i => $barang_id) {
+        $qty = floatval($request->qty[$i]);
+
+        // Ambil data barang
+        $barang = DB::table('barang')->where('id', $barang_id)->first();
+        if (!$barang) continue;
+
+        $harga = $barang->harga;
+        $subtotal = $qty * $harga;
+
+        $isTambahan = isset($request->is_tambahan[$i]) && $request->is_tambahan[$i] == '1' ? 1 : 0;
+
+        // Simpan detail retur
+        DB::table('retur_detail')->insert([
+            'retur_id' => $returId,
+            'barang_id' => $barang_id,
+            'qty' => $qty,
+            'harga' => $harga,
+            'subtotal' => $subtotal,
+            'is_tambahan' => $isTambahan,
+        ]);
+
+        // Update stok barang
+        $stokSebelum = $barang->stok;
+        DB::table('barang')->where('id', $barang_id)->increment('stok', $qty);
+
+        // Catat ke log barang
+        DB::table('log_barang')->insert([
+            'barang_id' => $barang_id,
+            'nama_barang' => $barang->nama,
+            'keterangan' => 'Retur Barang',
+            'stok_in' => $qty,
+            'stok_out' => 0,
+            'stok_after' => $stokSebelum + $qty,
+            'by_who' => session('username') ?? 'unknown',
+            'created_at' => now(),
+        ]);
+
+        $totalRetur += $subtotal;
+    }
+
+    // Update total retur
+    DB::table('retur')->where('id', $returId)->update(['total_retur' => $totalRetur]);
+
+    // ✅ Kurangi total_dibayar pada nota
+    DB::table('nota')->where('id', $nota->id)->update([
+        'total_dibayar' => DB::raw("GREATEST(0, total_dibayar + {$totalRetur})")
+    ]);
+
+    // ✅ Update status nota jadi 'retur'
+    DB::table('nota')->where('id', $nota->id)->update(['status' => 'retur']);
+
+    return redirect()->route('user.retur', [
+        'toko_nama' => $request->toko_nama,
+        'nokiriman' => $request->nokiriman
+    ])->with('success', 'Retur berhasil disimpan!');
+}
+
 }

@@ -19,7 +19,7 @@ class StokController extends Controller
             return redirect('/user/dashboard')->withErrors('Anda tidak memiliki akses untuk melihat stok barang.');
         }
 
-        $barang = DB::table('barang')->where('tipe', 'barang')->get();
+        $barang = DB::table('barang')->get();
         return view('user.stok', compact('barang'));
     }
 
