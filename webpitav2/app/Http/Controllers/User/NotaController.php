@@ -14,6 +14,11 @@ class NotaController extends Controller
             return redirect('/login');
         }
 
+        $user = DB::table('user')->where('id', session('user_id'))->first();
+        if (!$user || $user->nota != 1) {
+            return redirect('/user/dashboard')->withErrors('Anda tidak memiliki akses untuk melihat stok barang.');
+        }
+
         $toko = DB::table('toko')->get();
 
         return view('User.order', compact('toko'));

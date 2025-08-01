@@ -89,28 +89,54 @@ class BarangController extends Controller
 
 
     public function update(Request $request, $id)
-    {
-        if (session('role') !== 'admin') {
-            return redirect('/login');
-        }
-
-        $request->validate([
-            'nama' => 'required',
-            'stok' => 'required|integer',
-            'harga' => 'required|numeric',
-            'tipe' => 'required',
-        ]);
-
-        DB::table('barang')->where('id', $id)->update([
-            'nama' => $request->nama,
-            'stok' => $request->stok,
-            'harga' => $request->harga,
-            'tipe' => 'barang'
-        ]);
-        $this->logBarang($id, $request->nama, 'Barang diupdate', 0, 0, $request->stok);
-$this->logActivity("Mengupdate barang dengan ID: {$id}, Nama: {$request->nama}");
-        return redirect('/admin/barang')->with('success', 'Barang berhasil diupdate');
+{
+    if (session('role') !== 'admin') {
+        return redirect('/login');
     }
+
+    $request->validate([
+        'nama' => 'required',
+        'stok' => 'required|numeric',
+        'harga' => 'required|numeric',
+        'tipe' => 'required',
+    ]);
+
+    // Ambil data barang lama
+    $barang = DB::table('barang')->where('id', $id)->first();
+
+    if (!$barang) {
+        return redirect('/admin/barang')->withErrors('Barang tidak ditemukan');
+    }
+
+    $stok_lama = $barang->stok;
+    $stok_baru = $request->stok;
+
+    // Hitung stok masuk/keluar
+    $in = 0;
+    $out = 0;
+
+    if ($stok_baru > $stok_lama) {
+        $in = $stok_baru - $stok_lama;
+    } elseif ($stok_baru < $stok_lama) {
+        $out = $stok_lama - $stok_baru;
+    }
+
+    // Update barang
+    DB::table('barang')->where('id', $id)->update([
+        'nama' => $request->nama,
+        'stok' => $stok_baru,
+        'harga' => $request->harga,
+        'tipe' => 'barang' // Bisa juga pakai $request->tipe jika tidak selalu 'barang'
+    ]);
+
+    // Catat ke log barang
+    $this->logBarang($id, $request->nama, 'Barang diupdate oleh admin', $in, $out, $stok_baru);
+
+    // Catat ke log aktivitas
+    $this->logActivity("Mengupdate barang dengan ID: {$id}, Nama: {$request->nama}");
+
+    return redirect('/admin/barang')->with('success', 'Barang berhasil diupdate');
+}
 
     public function destroy($id)
 {
@@ -139,14 +165,14 @@ $this->logActivity("Mengupdate barang dengan ID: {$id}, Nama: {$request->nama}")
 
 
 
-    public function barangSearch(Request $request)
+    public function barangSearch()
 {
-    $term = $request->get('term');
+    $term = request('term');
     
     $barang = DB::table('barang')
-                ->where('tipe', 'barang')
-                ->where('nama', 'LIKE', "%$term%")
-                ->get();
+        ->where('tipe', 'barang')
+        ->where('nama', 'like', "%{$term}%")
+        ->get();
 
     $result = [];
     foreach ($barang as $b) {

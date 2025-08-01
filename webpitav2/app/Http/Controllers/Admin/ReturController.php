@@ -10,16 +10,11 @@ class ReturController extends Controller
 {
     public function index(Request $request)
 {   
-    
-    if (session('role') !== 'user') {
+    if (session('role') !== 'admin') {
             return redirect('/login');
         }
 
-        $user = DB::table('user')->where('id', session('user_id'))->first();
-        if (!$user || $user->retur != 1) {
-            return redirect('/user/dashboard')->withErrors('Anda tidak memiliki akses untuk melihat stok barang.');
-        }
-    
+       
     $tokoList = DB::table('toko')->get();
     $selectedToko = $request->input('toko_nama');
     $selectedNota = $request->input('nokiriman');
@@ -85,82 +80,59 @@ class ReturController extends Controller
 
     $totalRetur = 0;
     foreach ($request->barang_id as $i => $barang_id) {
-       $qty = floatval($request->qty[$i]);
+        $qty = floatval($request->qty[$i]);
 
-$barang = DB::table('barang')->where('id', $barang_id)->first();
+        // Ambil data barang
+        $barang = DB::table('barang')->where('id', $barang_id)->first();
 if (!$barang) continue;
 
 $isTambahan = isset($request->is_tambahan[$i]) && $request->is_tambahan[$i] == '1' ? 1 : 0;
 
 if (!$isTambahan) {
+    // Cari diskon dari nota_detail (jika bukan barang tambahan)
     $notaDetail = DB::table('nota_detail')
         ->where('nota_id', $nota->id)
         ->where('barang', $barang->nama)
         ->first();
 
-    $harga = $notaDetail
-        ? ($notaDetail->harga - ($notaDetail->diskon / 100 * $notaDetail->harga ?? 0))
-        : $barang->harga;
+    $harga = $notaDetail ? ($notaDetail->harga - ($notaDetail->diskon / 100 * $notaDetail->harga ?? 0)) : $barang->harga;
+    // dd($notaDetail, $harga);
 } else {
+    // Barang tambahan pakai harga dari master
     $harga = $barang->harga;
 }
 
 $subtotal = $qty * $harga;
 
-// Simpan ke retur_detail (selalu simpan nama paket/barang utama)
-DB::table('retur_detail')->insert([
-    'retur_id' => $returId,
-    'barang_id' => $barang_id,
-    'qty' => $qty,
-    'harga' => $harga,
-    'subtotal' => $subtotal,
-    'is_tambahan' => $isTambahan,
-]);
 
-$totalRetur += $subtotal;
+        // Simpan detail retur
+        DB::table('retur_detail')->insert([
+            'retur_id' => $returId,
+            'barang_id' => $barang_id,
+            'qty' => $qty,
+            'harga' => $harga,
+            'subtotal' => $subtotal,
+            'is_tambahan' => $isTambahan,
+        ]);
 
-// ⬇️ Penanganan barang & log
-if ($barang->tipe === 'barang') {
-    // Barang biasa
-    $stokSebelum = $barang->stok;
-    DB::table('barang')->where('id', $barang_id)->increment('stok', $qty);
+        // Update stok barang
+        $stokSebelum = $barang->stok;
+        DB::table('barang')->where('id', $barang_id)->increment('stok', $qty);
 
-    DB::table('log_barang')->insert([
-        'barang_id' => $barang_id,
-        'nama_barang' => $barang->nama,
-        'keterangan' => 'Retur Barang',
-        'stok_in' => $qty,
-        'stok_out' => 0,
-        'stok_after' => $stokSebelum + $qty,
-        'by_who' => session('username') ?? 'unknown',
-        'created_at' => now(),
-    ]);
-} elseif ($barang->tipe === 'paket') {
-    // Barang paket → update tiap komponen
-    $komponen = DB::table('paket_detail')->where('paket_id', $barang->id)->get();
-
-    foreach ($komponen as $item) {
-        $komponenBarang = DB::table('barang')->where('id', $item->barang_id)->first();
-        if (!$komponenBarang) continue;
-
-        $qtyRetur = $qty * $item->qty; // total qty komponen
-
-        DB::table('barang')->where('id', $komponenBarang->id)->increment('stok', $qtyRetur);
-
+        // Catat ke log barang
         DB::table('log_barang')->insert([
-            'barang_id' => $komponenBarang->id,
-            'nama_barang' => $komponenBarang->nama,
-            'keterangan' => 'Retur Barang dari Paket: ' . $barang->nama,
-            'stok_in' => $qtyRetur,
+            'barang_id' => $barang_id,
+            'nama_barang' => $barang->nama,
+            'keterangan' => 'Retur Barang',
+            'stok_in' => $qty,
             'stok_out' => 0,
-            'stok_after' => $komponenBarang->stok + $qtyRetur,
+            'stok_after' => $stokSebelum + $qty,
             'by_who' => session('username') ?? 'unknown',
             'created_at' => now(),
         ]);
-    }
-}
-    }
 
+        $totalRetur += $subtotal;
+    }
 
     // Update total retur
     DB::table('retur')->where('id', $returId)->update(['total_retur' => $totalRetur]);

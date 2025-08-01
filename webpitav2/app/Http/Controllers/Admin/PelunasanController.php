@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\User;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -12,15 +12,9 @@ class PelunasanController extends Controller
     
         public function index(Request $request)
     {   
-        if (session('role') !== 'user') {
+        if (session('role') !== 'admin') {
             return redirect('/login');
         }
-
-        $user = DB::table('user')->where('id', session('user_id'))->first();
-        if (!$user || $user->pelunasan != 1) {
-            return redirect('/user/dashboard')->withErrors('Anda tidak memiliki akses untuk melihat stok barang.');
-        }
-
         $tokoList = DB::table('toko')->get();
         $selectedToko = $request->input('toko_nama');
         $selectedNota = $request->input('nokiriman');

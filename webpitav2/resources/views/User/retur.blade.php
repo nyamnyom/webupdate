@@ -43,14 +43,18 @@
 
         <h4>Barang dari Nota</h4>
         @foreach($notaBarang as $i => $barang)
-        <div style="margin-bottom:10px;">
+        <div style="margin-bottom:10px; border-bottom:1px solid #ccc; padding-bottom:5px;">
             @php
                 $barangId = DB::table('barang')->where('nama', $barang->barang)->value('id');
             @endphp
             <input type="hidden" name="barang_id[]" value="{{ $barangId }}">
             <input type="hidden" name="is_tambahan[]" value="0">
-            {{ $barang->barang }} - Qty Beli: {{ $barang->qty }}
-            <input type="number" step="0.01" name="qty[]" placeholder="Qty retur">
+            <strong>{{ $barang->barang }}</strong> - Qty Beli: {{ $barang->qty }}<br>
+            Qty Retur: <input type="number" step="0.01" name="qty[]" placeholder="Qty retur" >
+            Harga Satuan: <input type="text" value="{{ $barang->harga }}" readonly>
+Diskon: <input type="text" value="{{ $barang->diskon ?? 0 }}" readonly>
+<input type="hidden" name="harga[]" value="{{ $barang->harga }}">
+<input type="hidden" name="diskon[]" value="{{ $barang->diskon ?? 0 }}">
         </div>
         @endforeach
 
@@ -75,6 +79,14 @@
             <div style="flex: 1;">
                 <label>Qty:</label><br>
                 <input type="number" step="0.01" id="barang-qty" class="form-control">
+            </div>
+            <div style="flex: 1;">
+                <label>Harga:</label><br>
+                <input type="number" step="0.01" id="barang-harga" class="form-control">
+            </div>
+            <div style="flex: 1;">
+                <label>Diskon:</label><br>
+                <input type="number" step="0.01" id="barang-diskon" class="form-control" value="0">
             </div>
             <div style="flex: 0.5;">
                 <br>
@@ -106,25 +118,32 @@ $(document).ready(function() {
 function addBarangTambahan() {
     const select = document.getElementById('barang-select');
     const qtyInput = document.getElementById('barang-qty');
+    const hargaInput = document.getElementById('barang-harga');
+    const diskonInput = document.getElementById('barang-diskon');
     const container = document.getElementById('barang-tambahan-container');
 
     const barangId = select.value;
     const barangNama = select.options[select.selectedIndex].text;
     const qty = qtyInput.value;
+    const harga = hargaInput.value;
+    const diskon = diskonInput.value;
 
-    if (!barangId || !qty || parseFloat(qty) <= 0) {
-        alert("Pilih barang dan masukkan qty yang valid.");
+    if (!barangId || !qty || parseFloat(qty) <= 0 || !harga) {
+        alert("Lengkapi data barang, qty, dan harga.");
         return;
     }
 
     const div = document.createElement('div');
+    div.style.marginBottom = "10px";
+    div.style.borderBottom = "1px solid #ccc";
+    div.style.paddingBottom = "5px";
     div.innerHTML = `
-        <div style="margin-bottom:10px;">
-            ${barangNama} - Qty: ${qty}
-            <input type="hidden" name="barang_id[]" value="${barangId}">
-            <input type="hidden" name="qty[]" value="${qty}">
-            <input type="hidden" name="is_tambahan[]" value="1">
-        </div>
+        <strong>${barangNama}</strong> - Qty: ${qty}, Harga: ${harga}, Diskon: ${diskon} %, subtotal: ${(qty * harga * (1 - diskon / 100)).toFixed(2)}<br>  
+        <input type="hidden" name="barang_id[]" value="${barangId}">
+        <input type="hidden" name="qty[]" value="${qty}">
+        <input type="hidden" name="harga[]" value="${harga}">
+        <input type="hidden" name="diskon[]" value="${diskon}">
+        <input type="hidden" name="is_tambahan[]" value="1">
     `;
     container.appendChild(div);
 
@@ -132,6 +151,8 @@ function addBarangTambahan() {
     select.selectedIndex = 0;
     $('#barang-select').val(null).trigger('change');
     qtyInput.value = "";
+    hargaInput.value = "";
+    diskonInput.value = "0";
 }
 </script>
 @endsection

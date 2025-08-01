@@ -182,13 +182,38 @@ public function update(Request $request, $id)
         'harga' => 'required|numeric',
     ]);
 
+    $barang = DB::table('barang')->where('id', $id)->first();
+
+    if (!$barang) {
+        return redirect('/user/stok')->withErrors('Barang tidak ditemukan');
+    }
+
+    // Hitung selisih stok
+    $stokLama = $barang->stok;
+    $stokBaru = $request->stok;
+    $selisih = $stokBaru - $stokLama;
+
     DB::table('barang')->where('id', $id)->update([
         'nama' => $request->nama,
-        'stok' => $request->stok,
+        'stok' => $stokBaru,
         'harga' => $request->harga,
     ]);
 
-    $this->logBarang($id, $request->nama, 'User mengupdate barang', 0, 0, $request->stok);
+    // Tentukan log masuk atau keluar
+    $stok_in = $selisih > 0 ? $selisih : 0;
+    $stok_out = $selisih < 0 ? abs($selisih) : 0;
+
+    // Panggil logBarang jika ada perubahan stok
+    if ($stok_in > 0 || $stok_out > 0) {
+        $this->logBarang(
+            $id,
+            $request->nama,
+            'User mengupdate stok barang',
+            $stok_in,
+            $stok_out,
+            $stokBaru
+        );
+    }
 
     return redirect('/user/stok')->with('success', 'Barang berhasil diupdate');
 }

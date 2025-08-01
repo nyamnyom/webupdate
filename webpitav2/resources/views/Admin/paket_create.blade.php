@@ -17,7 +17,7 @@
 
     <div>
         <label>Tambah Komponen Barang:</label><br>
-        <input type="text" id="barang-input" placeholder="Ketik nama barang..." autocomplete="off">
+        <input type="text" id="barang-input" placeholder="Ketik nama barang..." autocomplete="on">
         <input type="hidden" id="barang-id">
         <label>Jumlah:</label><br>
         <input type="number" id="barang-jumlah" value="1" min="0.01" step="0.01">
@@ -51,7 +51,7 @@
 
     $(function() {
         $("#barang-input").autocomplete({
-            source: "{{ url('/api/barang-search') }}", // hanya barang non-paket
+            source: "{{ url('/admin/api/barang-search') }}",
             minLength: 1,
             select: function(event, ui) {
                 $('#barang-id').val(ui.item.id);
@@ -60,31 +60,27 @@
     });
 
     function tambahKomponen() {
-    const nama = $('#barang-input').val().trim();
-    const id = $('#barang-id').val();
-    const jumlahStr = $('#barang-jumlah').val();
-    const jumlah = parseFloat(jumlahStr);
+        const nama = $('#barang-input').val().trim();
+        const id = $('#barang-id').val();
+        const jumlah = parseFloat($('#barang-jumlah').val());
 
-    if (!nama || !id || isNaN(jumlah) || jumlah <= 0) {
-        alert("Isi nama barang yang valid dan jumlah > 0");
-        return;
+        if (!nama || !id || isNaN(jumlah) || jumlah <= 0) {
+            alert("Isi nama barang yang valid dan jumlah > 0");
+            return;
+        }
+
+        if (daftarKomponen.some(b => b.id === id)) {
+            alert("Barang sudah ada dalam paket");
+            return;
+        }
+
+        daftarKomponen.push({ id, nama, jumlah });
+        renderDaftar();
+
+        $('#barang-input').val('');
+        $('#barang-id').val('');
+        $('#barang-jumlah').val(1);
     }
-
-    // Cegah duplikat
-    if (daftarKomponen.some(b => b.id === id)) {
-        alert("Barang sudah ada dalam paket");
-        return;
-    }
-
-    daftarKomponen.push({ id, nama, jumlah });
-    renderDaftar();
-
-    // Reset input
-    $('#barang-input').val('');
-    $('#barang-id').val('');
-    $('#barang-jumlah').val(1);
-}
-
 
     function renderDaftar() {
         const tbody = $('#daftar-barang tbody');
@@ -96,10 +92,12 @@
                     <td>${b.nama}</td>
                     <td>${b.id}</td>
                     <td>${b.jumlah}</td>
-                    <td><button type="button" onclick="hapus(${i})">Hapus</button></td>
+                    <td>
+                        <button type="button" onclick="hapus(${i})">Hapus</button>
+                        <input type="hidden" name="komponen[${i}][id]" value="${b.id}">
+                        <input type="hidden" name="komponen[${i}][jumlah]" value="${b.jumlah}">
+                    </td>
                 </tr>
-                <input type="hidden" name="komponen[${i}][id]" value="${b.id}">
-                <input type="hidden" name="komponen[${i}][jumlah]" value="${b.jumlah}">
             `);
         });
     }

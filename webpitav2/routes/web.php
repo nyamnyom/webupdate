@@ -6,7 +6,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\BarangController as AdminBarangController;
 use App\Http\Controllers\Admin\LogBarangController;
-use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\NotaHistoryController;
 use App\Http\Controllers\Admin\UserActivityController;
 
 
@@ -30,7 +30,9 @@ Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
 // Route::resource('/admin/user', AdminUserController::class);
 Route::resource('/admin/barang', AdminBarangController::class);
 
-Route::get('/api/barang-search', [AdminBarangController::class, 'barangSearch']);
+
+
+Route::get('/admin/api/barang-search', [AdminBarangController::class, 'barangSearch']);
 Route::get('/admin/barang/paket/create', [AdminBarangController::class, 'formPaket']);
 Route::post('/admin/barang/paket/store', [AdminBarangController::class, 'storePaket']);
 Route::get('/admin/barang/paket/edit/{id}', [AdminBarangController::class, 'editPaket']);
@@ -53,6 +55,12 @@ Route::get('/admin/log-barang', [LogBarangController::class, 'index']);
 Route::get('/admin/user-activity', [UserActivityController::class, 'index']);
 
 
+// admin nota 
+// Riwayat Nota
+Route::get('/admin/history-nota', [NotaHistoryController::class, 'index'])->name('admin.historynota');
+Route::post('/admin/history-nota/{id}/cancel', [NotaHistoryController::class, 'cancel'])->name('admin.historynota.cancel');
+Route::get('/admin/history-nota/{id}/edit', [NotaHistoryController::class, 'edit'])->name('admin.historynota.edit');
+Route::post('/admin/history-nota/{id}/update', [NotaHistoryController::class, 'update'])->name('admin.historynota.update');
 
 
 

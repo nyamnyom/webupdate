@@ -67,7 +67,7 @@
 <div class="sidebar">
     <h2>Admin Menu</h2>
     <a href="{{ url('/admin/barang') }}">Manajemen Barang</a>
-    <a href="{{ url('/admin/penjualan') }}">Riwayat Penjualan</a>
+    <a href="{{ route('admin.historynota') }}">Riwayat Penjualan</a>
     <a href="{{ url('/admin/user') }}">Manajemen Pegawai</a>
     <a href="{{ url('/admin/user-activity') }}">History Log</a>
     <a href="{{ url('/admin/log-barang') }}">Log Interaksi Barang</a>
