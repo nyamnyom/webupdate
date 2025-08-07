@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\User;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -43,7 +43,7 @@ class ReturController extends Controller
 
     $semuaBarang = DB::table('barang')->get();
 
-    return view('user.retur', compact(
+    return view('admin.retur', compact(
         'tokoList',
         'notaList',
         'notaBarang',
@@ -145,7 +145,7 @@ $subtotal = $qty * $harga;
     // ✅ Update status nota jadi 'retur'
     DB::table('nota')->where('id', $nota->id)->update(['status' => 'retur']);
 
-    return redirect()->route('user.retur', [
+    return redirect()->route('admin.retur', [
         'toko_nama' => $request->toko_nama,
         'nokiriman' => $request->nokiriman
     ])->with('success', 'Retur berhasil disimpan!');

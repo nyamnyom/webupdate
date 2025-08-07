@@ -8,7 +8,9 @@ use App\Http\Controllers\Admin\BarangController as AdminBarangController;
 use App\Http\Controllers\Admin\LogBarangController;
 use App\Http\Controllers\Admin\NotaHistoryController;
 use App\Http\Controllers\Admin\UserActivityController;
-
+use App\Http\Controllers\Admin\ReturController as AdminReturController;
+use App\Http\Controllers\Admin\PelunasanController as AdminPelunasanController;
+use App\Http\Controllers\Admin\NotaController as AdminNotaController;
 
 use App\Http\Controllers\User\DashboardController as UserDashboardController;
 use App\Http\Controllers\User\NotaController;
@@ -63,9 +65,15 @@ Route::get('/admin/history-nota/{id}/edit', [NotaHistoryController::class, 'edit
 Route::post('/admin/history-nota/{id}/update', [NotaHistoryController::class, 'update'])->name('admin.historynota.update');
 
 
+// retur n pelunasan
+Route::get('/admin/retur', [AdminReturController::class, 'index'])->name('admin.retur');
+Route::post('/admin/retur/simpan', [AdminReturController::class, 'submit'])->name('admin.retur.submit');
 
+Route::get('/admin/pelunasan', [AdminPelunasanController::class, 'index'])->name('admin.pelunasan');
+Route::post('/admin/pelunasan/simpan', [AdminPelunasanController::class, 'simpan'])->name('admin.pelunasan.simpan');
 
-
+Route::get('/admin/order', [AdminNotaController::class, 'form']);
+Route::post('/admin/order', [AdminNotaController::class, 'submit']);
 
 
 

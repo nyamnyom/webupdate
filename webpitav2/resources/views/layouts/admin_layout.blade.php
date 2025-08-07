@@ -68,6 +68,9 @@
     <h2>Admin Menu</h2>
     <a href="{{ url('/admin/barang') }}">Manajemen Barang</a>
     <a href="{{ route('admin.historynota') }}">Riwayat Penjualan</a>
+    <a href="{{ url('/admin/order') }}">Buat Nota</a>
+    <a href="{{ url('/admin/retur')}}">Manajemen Retur</a>
+    <a href="{{ url('/admin/pelunasan') }}">Manajemen Pelunasan</a>
     <a href="{{ url('/admin/user') }}">Manajemen Pegawai</a>
     <a href="{{ url('/admin/user-activity') }}">History Log</a>
     <a href="{{ url('/admin/log-barang') }}">Log Interaksi Barang</a>

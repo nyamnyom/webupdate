@@ -15,10 +15,68 @@ class NotaHistoryController extends Controller
 }
 
     public function cancel($id)
-    {
-        DB::table('nota')->where('id', $id)->update(['status' => 'cancel']);
-        return redirect()->back()->with('success', 'Nota berhasil dibatalkan.');
+{
+    $username = session('username') ?? session('user') ?? 'unknown';
+
+    $nota = DB::table('nota')->where('id', $id)->first();
+    if (!$nota) {
+        return redirect()->back()->with('error', 'Nota tidak ditemukan.');
     }
+
+    $nokiriman = $nota->nokiriman;
+
+    // Ambil semua detail nota
+    $details = DB::table('nota_detail')->where('nota_id', $id)->get();
+
+    foreach ($details as $detail) {
+        $barang = DB::table('barang')->where('nama', $detail->barang)->first();
+
+        if ($barang) {
+            if ($barang->tipe == 'paket') {
+                // Ambil komponen barang paket
+                $komponen = DB::table('paket_detail')->where('paket_id', $barang->id)->get();
+
+                foreach ($komponen as $isi) {
+                    $brg = DB::table('barang')->where('id', $isi->barang_id)->first();
+                    $jumlahKembali = $isi->qty * $detail->qty;
+
+                    // Kembalikan stok komponen
+                    DB::table('log_barang')->insert([
+                        'barang_id' => $brg->id,
+                        'nama_barang' => $brg->nama,
+                        'keterangan' => 'cancel nota nokiriman ' . $nokiriman . ', paket ' . $barang->nama,
+                        'stok_in' => $jumlahKembali,
+                        'stok_after' => $brg->stok + $jumlahKembali,
+                        'by_who' => $username,
+                    ]);
+
+                    DB::table('barang')->where('id', $brg->id)->update([
+                        'stok' => $brg->stok + $jumlahKembali,
+                    ]);
+                }
+            } else {
+                // Barang biasa
+                DB::table('log_barang')->insert([
+                    'barang_id' => $barang->id,
+                    'nama_barang' => $barang->nama,
+                    'keterangan' => 'cancel nota nokiriman ' . $nokiriman,
+                    'stok_in' => $detail->qty,
+                    'stok_after' => $barang->stok + $detail->qty,
+                    'by_who' => $username,
+                ]);
+
+                DB::table('barang')->where('id', $barang->id)->update([
+                    'stok' => $barang->stok + $detail->qty,
+                ]);
+            }
+        }
+    }
+
+    // Update status nota menjadi cancel
+    DB::table('nota')->where('id', $id)->update(['status' => 'cancel']);
+
+    return redirect()->back()->with('success', 'Nota berhasil dibatalkan dan stok telah dikembalikan.');
+}
 
     public function edit($id)
 {

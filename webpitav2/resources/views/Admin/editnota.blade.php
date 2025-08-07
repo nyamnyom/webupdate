@@ -5,10 +5,20 @@
 <div class="container">
     <h2>Edit Nota #{{ $nota->id }}</h2>
 
+    @php
+        $isCanceled = $nota->STATUS == 'cancel';
+    @endphp
+
     @if(session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
     @elseif(session('error'))
         <div class="alert alert-danger">{{ session('error') }}</div>
+    @endif
+
+    @if($isCanceled)
+        <div class="alert alert-warning">
+            Nota ini sudah dibatalkan. Data tidak dapat diedit lagi.
+        </div>
     @endif
 
     <form method="POST" action="{{ route('admin.historynota.update', $nota->id) }}">
@@ -16,15 +26,15 @@
 
         <div class="mb-3">
             <label>No Kiriman</label>
-            <input type="text" name="nokiriman" class="form-control" value="{{ $nota->nokiriman }}">
+            <input type="text" name="nokiriman" class="form-control" value="{{ $nota->nokiriman }}" @disabled($isCanceled)>
         </div>
         <div class="mb-3">
             <label>Pengerja</label>
-            <input type="text" name="pengerja" class="form-control" value="{{ $nota->pengerja }}">
+            <input type="text" name="pengerja" class="form-control" value="{{ $nota->pengerja }}" @disabled($isCanceled)>
         </div>
         <div class="mb-3">
             <label>Status</label>
-            <select name="status" class="form-control">
+            <select name="status" class="form-control" @disabled($isCanceled)>
                 <option {{ $nota->STATUS == 'lunas' ? 'selected' : '' }}>lunas</option>
                 <option {{ $nota->STATUS == 'belum lunas' ? 'selected' : '' }}>belum lunas</option>
                 <option {{ $nota->STATUS == 'retur' ? 'selected' : '' }}>retur</option>
@@ -53,12 +63,14 @@
                             <input type="hidden" name="detail_id[]" value="{{ $d->id }}">
                             <input type="hidden" name="barang[]" value="{{ $d->barang }}">
                         </td>
-                        <td><input type="number" name="qty[{{ $d->id }}]" value="{{ $d->qty }}" class="form-control" min="1" oninput="updateSubtotal(this)"></td>
-                        <td><input type="number" name="harga[{{ $d->id }}]" value="{{ $d->harga }}" class="form-control" step="0.01" oninput="updateSubtotal(this)"></td>
-                        <td><input type="number" name="diskon[{{ $d->id }}]" value="{{ $d->diskon }}" class="form-control" step="0.01" oninput="updateSubtotal(this)"></td>
-                        <td class="subtotal">{{ number_format($d->qty * $d->harga, 2) }}</td>
+                        <td><input type="number" name="qty[{{ $d->id }}]" value="{{ $d->qty }}" class="form-control" min="1" oninput="updateSubtotal(this)" @disabled($isCanceled)></td>
+                        <td><input type="number" name="harga[{{ $d->id }}]" value="{{ $d->harga }}" class="form-control" step="0.01" oninput="updateSubtotal(this)" @disabled($isCanceled)></td>
+                        <td><input type="number" name="diskon[{{ $d->id }}]" value="{{ $d->diskon }}" class="form-control" step="0.01" oninput="updateSubtotal(this)" @disabled($isCanceled)></td>
+                        <td class="subtotal">{{ number_format($d->qty * $d->harga * (1 - $d->diskon / 100), 2) }}</td>
                         <td>
-                            <button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(this, '{{ $d->id }}')">Hapus</button>
+                            @if (!$isCanceled)
+                                <button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(this, '{{ $d->id }}')">Hapus</button>
+                            @endif
                         </td>
                     </tr>
                 @endforeach
@@ -67,10 +79,12 @@
 
         <input type="hidden" name="hapus_detail[]" id="hapus-detail-list">
 
-        <button type="button" class="btn btn-sm btn-success mb-3" onclick="tambahBarang()">+ Tambah Barang</button>
+        @if (!$isCanceled)
+            <button type="button" class="btn btn-sm btn-success mb-3" onclick="tambahBarang()">+ Tambah Barang</button>
+            <br><br>
+            <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+        @endif
 
-        <br><br>
-        <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
         <a href="{{ route('admin.historynota') }}" class="btn btn-secondary">Kembali</a>
     </form>
 </div>
@@ -93,7 +107,7 @@
             <td><input type="number" name="qty_baru[]" class="form-control" min="1" oninput="updateSubtotal(this)"></td>
             <td><input type="number" name="harga_baru[]" class="form-control" step="0.01" oninput="updateSubtotal(this)"></td>
             <td><input type="number" name="diskon_baru[]" class="form-control" step="0.01" oninput="updateSubtotal(this)"></td>
-            <td class="subtotal">{{ number_format($d->qty * $d->harga, 2) }}</td>
+            <td class="subtotal">0.00</td>
             <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(this)">Hapus</button></td>
         `;
 
@@ -113,13 +127,13 @@
         const row = input.closest('tr');
         const qtyInput = row.querySelector('input[name^="qty"]') || row.querySelector('input[name="qty_baru[]"]');
         const hargaInput = row.querySelector('input[name^="harga"]') || row.querySelector('input[name="harga_baru[]"]');
-        const diskonInput = row.querySelector('input[name^="diskon"]');
+        const diskonInput = row.querySelector('input[name^="diskon"]') || row.querySelector('input[name="diskon_baru[]"]');
         const subtotalCell = row.querySelector('.subtotal');
 
-        const qty = parseFloat(qtyInput.value) || 0;
-        const harga = parseFloat(hargaInput.value) || 0;
-        const diskon = parseFloat(diskonInput.value) || 0;
-        const subtotal = qty * (harga - (harga * diskon/100));
+        const qty = parseFloat(qtyInput?.value) || 0;
+        const harga = parseFloat(hargaInput?.value) || 0;
+        const diskon = parseFloat(diskonInput?.value) || 0;
+        const subtotal = qty * (harga - (harga * diskon / 100));
 
         subtotalCell.textContent = subtotal.toFixed(2);
     }

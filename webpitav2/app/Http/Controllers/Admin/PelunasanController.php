@@ -29,6 +29,7 @@ class PelunasanController extends Controller
                 $notaList = DB::table('nota')
                     ->where('toko_id', $tokoId)
                     ->where('status', '!=', 'lunas')
+                    ->where('status', '!=', 'cancel')
                     ->get();
 
                 if ($selectedNota) {
@@ -40,7 +41,7 @@ class PelunasanController extends Controller
             }
         }
 
-        return view('user.pelunasan', [
+        return view('admin.pelunasan', [
             'tokoList' => $tokoList,
             'selectedToko' => $selectedToko,
             'selectedNota' => $selectedNota,
@@ -91,7 +92,7 @@ class PelunasanController extends Controller
                 ]);
 
             DB::commit();
-            return redirect()->route('user.pelunasan')->with('success', 'Pelunasan berhasil disimpan.');
+            return redirect()->route('admin.pelunasan')->with('success', 'Pelunasan berhasil disimpan.');
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Gagal menyimpan pelunasan: ' . $e->getMessage());
