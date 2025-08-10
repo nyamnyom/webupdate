@@ -72,6 +72,8 @@
     <a href="{{ url('/admin/retur')}}">Manajemen Retur</a>
     <a href="{{ url('/admin/pelunasan') }}">Manajemen Pelunasan</a>
     <a href="{{ url('/admin/user') }}">Manajemen Pegawai</a>
+    <a href="{{ url('/admin/sales') }}">Manajemen Sales</a>
+    <a href="{{ url('/admin/toko') }}">Manajemen Toko</a>
     <a href="{{ url('/admin/user-activity') }}">History Log</a>
     <a href="{{ url('/admin/log-barang') }}">Log Interaksi Barang</a>
     <a href="{{ url('/logout') }}" class="logout">Log Out</a>

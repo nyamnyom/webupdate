@@ -65,6 +65,8 @@
     <h2>User Menu</h2>
     
     <a href="{{ url('/user/stok') }}">Manajemen Barang</a>
+    <a href="{{ url('/user/sales') }}">Manajemen Sales</a>
+    <a href="{{ url('/user/historynota') }}">History Nota</a>
     <a href="{{ url('user/order') }}">Buat Nota</a>
     <a href="{{ url('/user/retur') }}">Retur Barang</a>
     <a href="{{ url('/user/pelunasan') }}">Pelunasan</a>

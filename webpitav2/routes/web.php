@@ -11,12 +11,15 @@ use App\Http\Controllers\Admin\UserActivityController;
 use App\Http\Controllers\Admin\ReturController as AdminReturController;
 use App\Http\Controllers\Admin\PelunasanController as AdminPelunasanController;
 use App\Http\Controllers\Admin\NotaController as AdminNotaController;
+use App\Http\Controllers\Admin\SalesController as AdminSalesController;
 
 use App\Http\Controllers\User\DashboardController as UserDashboardController;
 use App\Http\Controllers\User\NotaController;
 use App\Http\Controllers\User\ReturController;
 use App\Http\Controllers\User\PelunasanController;
 use App\Http\Controllers\User\StokController;
+use App\Http\Controllers\User\NotaHistoryController as UserNotaHistoryController;
+use App\Http\Controllers\User\SalesController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
@@ -75,8 +78,10 @@ Route::post('/admin/pelunasan/simpan', [AdminPelunasanController::class, 'simpan
 Route::get('/admin/order', [AdminNotaController::class, 'form']);
 Route::post('/admin/order', [AdminNotaController::class, 'submit']);
 
-
-
+Route::get('/admin/sales', [AdminSalesController::class, 'index'])->name('admin.sales.index');
+Route::get('/admin/sales/create', [AdminSalesController::class, 'create'])->name('admin.sales.create');
+Route::post('/admin/sales/store', [AdminSalesController::class, 'store'])->name('admin.sales.store');
+Route::post('/admin/sales/{id}/delete', [AdminSalesController::class, 'destroy'])->name('admin.sales.destroy');
 
 
 
@@ -86,7 +91,7 @@ Route::post('/admin/order', [AdminNotaController::class, 'submit']);
 
 // USER
 Route::get('/user/dashboard', [UserDashboardController::class, 'index']);
-
+Route::get('/user/historynota', [UserNotaHistoryController::class, 'index']);
 
 Route::get('/user/order', [NotaController::class, 'form']);
 Route::post('/user/order', [NotaController::class, 'submit']);
@@ -129,3 +134,6 @@ Route::get('/api/barang-search', [StokController::class, 'barangSearch']);
 Route::get('/user/paket/create', [StokController::class, 'createPaket'])->name('user.paket.create');
 Route::post('/user/paket/store', [StokController::class, 'storePaket'])->name('user.paket.store');
 
+Route::get('/user/sales', [SalesController::class, 'index'])->name('sales.index');
+Route::get('/user/sales/create', [SalesController::class, 'create'])->name('sales.create');
+Route::post('/user/sales', [SalesController::class, 'store'])->name('sales.store');

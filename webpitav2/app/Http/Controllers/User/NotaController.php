@@ -18,10 +18,10 @@ class NotaController extends Controller
         if (!$user || $user->nota != 1) {
             return redirect('/user/dashboard')->withErrors('Anda tidak memiliki akses untuk melihat stok barang.');
         }
+        $sales = DB::table('sales')->orderBy('username')->get();
+$toko = DB::table('toko')->get();
 
-        $toko = DB::table('toko')->get();
-
-        return view('User.order', compact('toko'));
+        return view('User.order', compact('toko', 'sales'));
     }
 
     public function submit(Request $request)
@@ -32,10 +32,12 @@ class NotaController extends Controller
 
     $username = session('username') ?? 'unknown';
 
+    // Validasi input
     $request->validate([
         'dari_toko' => 'required|exists:toko,nama_toko',
         'nokiriman' => 'required|string|max:255',
-        'pengerja' => 'required|string|max:100',
+        'pengerja' => 'required|array|min:1',
+        'pengerja.*' => 'string|max:100',
         'tanggal' => 'nullable|date',
         'items' => 'required|array|min:1',
         'items.*.id' => 'required|string',
@@ -44,9 +46,13 @@ class NotaController extends Controller
         'items.*.harga' => 'required|numeric|min:0'
     ]);
 
+    // Gabungkan array pengerja jadi string dipisah koma
+    $pengerja = implode(', ', $request->pengerja);
+
     $items = $request->items;
     $total = 0;
 
+    // Hitung total harga
     foreach ($items as $item) {
         $barang = DB::table('barang')->where('id', $item['id'])->first();
         if (!$barang) {
@@ -57,15 +63,17 @@ class NotaController extends Controller
         $total += $harga_diskon * $item['jumlah'];
     }
 
+    // Simpan header transaksi
     $htrans_id = DB::table('nota')->insertGetId([
         'total' => $total,
         'nokiriman' => $request->nokiriman,
         'user_id' => $username,
         'toko_id' => $request->dari_toko,
-        'pengerja' => $request->pengerja,
+        'pengerja' => $pengerja,
         'created_at' => $request->filled('tanggal') ? $request->tanggal : now(),
     ]);
 
+    // Simpan detail dan update stok
     foreach ($items as $item) {
         $barang = DB::table('barang')->where('id', $item['id'])->first();
         $diskon = isset($item['diskon']) ? floatval($item['diskon']) : 0;
@@ -82,11 +90,10 @@ class NotaController extends Controller
         ]);
 
         if ($barang->tipe === 'paket') {
-            // Ambil komponen dari paket
+            // Kurangi stok komponen paket
             $komponen = DB::table('paket_detail')->where('paket_id', $barang->id)->get();
             foreach ($komponen as $k) {
                 $jumlah = $item['jumlah'] * $k->qty;
-
                 DB::table('barang')->where('id', $k->barang_id)->decrement('stok', $jumlah);
 
                 $komponen_barang = DB::table('barang')->where('id', $k->barang_id)->first();
@@ -111,6 +118,7 @@ class NotaController extends Controller
             );
         }
 
+        // Log aktivitas user
         DB::table('user_activity_log')->insert([
             'user_id' => session('user_id'),
             'aktivitas' => "input order barang {$barang->nama} x{$item['jumlah']} dari toko: {$request->dari_toko}, No Kiriman: {$request->nokiriman}",
@@ -120,6 +128,7 @@ class NotaController extends Controller
 
     return redirect('/user/order')->with('success', 'Order berhasil diproses');
 }
+
 
 
     public function barangAutocomplete(Request $request)

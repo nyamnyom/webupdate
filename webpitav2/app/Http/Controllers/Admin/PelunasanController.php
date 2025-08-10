@@ -28,8 +28,9 @@ class PelunasanController extends Controller
             if ($tokoId) {
                 $notaList = DB::table('nota')
                     ->where('toko_id', $tokoId)
-                    ->where('status', '!=', 'lunas')
-                    ->where('status', '!=', 'cancel')
+                    ->where('STATUS', '!=', 'lunas')
+                    ->where('STATUS', '!=', 'retur lunas')
+                    ->where('STATUS', '!=', 'cancel')
                     ->get();
 
                 if ($selectedNota) {
@@ -51,51 +52,77 @@ class PelunasanController extends Controller
     }
 
     public function simpan(Request $request)
-    {
-        $request->validate([
-            'nota_id' => 'required|integer',
-            'jumlah_bayar' => 'required|numeric|min:1',
+{
+    $request->validate([
+        'nota_id'      => 'required|integer',
+        'jumlah_bayar' => 'required|numeric|min:1',
+    ]);
+
+    // Ambil data nota
+    $nota = DB::table('nota')
+        ->select('id', 'nokiriman', 'total', 'total_dibayar', 'status', 'toko_id')
+        ->where('id', $request->nota_id)
+        ->where('nokiriman', $request->nokiriman)
+        ->first();
+
+    if (!$nota) {
+        return redirect()->back()->with('error', 'Nota tidak ditemukan atau tidak cocok.');
+    }
+
+    // Validasi kelebihan bayar
+    if ($request->jumlah_bayar + $nota->total_dibayar > $nota->total) {
+        return redirect()->back()->with('error', 'Jumlah bayar melebihi total tagihan.');
+    }
+
+    DB::beginTransaction();
+    try {
+        // Simpan pelunasan
+        DB::table('pelunasan')->insert([
+            'nota_id'       => $request->nota_id,
+            'nokiriman'     => $request->nokiriman,
+            'user_id'       => session('username'),
+            'nama_toko'     => $nota->toko_id,
+            'jumlah_bayar'  => $request->jumlah_bayar,
+            'tanggal_bayar' => $request->tanggal_bayar ?? now()->format('Y-m-d'),
+            'keterangan'    => $request->catatan,
+            'created_at'    => now(),
         ]);
 
-        $nota = DB::table('nota')
+        // Hitung total bayar baru
+        $totalBayarBaru = $nota->total_dibayar + $request->jumlah_bayar;
+
+        // Tentukan status baru
+        $statusBaru = $nota->status; // default tidak berubah
+        if ($totalBayarBaru >= $nota->total) {
+            $statusNota = ($nota->status); // normalisasi huruf kecil
+            if ($statusNota === 'belum lunas') {
+                $statusBaru = 'lunas';
+            } elseif ($statusNota === 'retur belum lunas') {
+                $statusBaru = 'retur lunas';
+            }
+        } else {
+            $statusBaru = $nota->status; // tetap sama kalau belum terbayar penuh
+        }
+        DB::table('user_activity_log')->insert([
+            'user_id' => session('username'),
+            'activity' => 'Melakukan pelunasan pada nota: ' . $request->nota_id,
+            'created_at' => now(),
+        ]);
+        // Update nota
+        DB::table('nota')
             ->where('id', $request->nota_id)
-            ->where('nokiriman', $request->nokiriman)
-            ->first();
-
-        if (!$nota) {
-            return redirect()->back()->with('error', 'Nota tidak ditemukan atau tidak cocok.');
-        }
-
-        if ($request->jumlah_bayar + $nota->total_dibayar > $nota->total) {
-            return redirect()->back()->with('error', 'Jumlah bayar melebihi total tagihan.');
-        }
-
-        DB::beginTransaction();
-        try {
-            DB::table('pelunasan')->insert([
-                'nota_id' => $request->nota_id,
-                'nokiriman' => $request->nokiriman,
-                'user_id'=> session('username'),
-                'nama_toko'=> $nota->toko_id,
-                'jumlah_bayar' => $request->jumlah_bayar,
-                'tanggal_bayar' => $request->tanggal_bayar ?? now()->format('Y-m-d'),
-                'keterangan' => $request->catatan,
-                'created_at' => now(),
-                
+            ->update([
+                'total_dibayar' => $totalBayarBaru,
+                'STATUS'        => $statusBaru,
             ]);
 
-            DB::table('nota')
-                ->where('id', $request->nota_id)
-                ->update([
-                    'total_dibayar' => $nota->total_dibayar + $request->jumlah_bayar,
-                    'status' => ($nota->total_dibayar + $request->jumlah_bayar) >= $nota->total ? 'lunas' : 'belum lunas',
-                ]);
-
-            DB::commit();
-            return redirect()->route('admin.pelunasan')->with('success', 'Pelunasan berhasil disimpan.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->back()->with('error', 'Gagal menyimpan pelunasan: ' . $e->getMessage());
-        }
+        DB::commit();
+        return redirect()->route('admin.pelunasan')->with('success', 'Pelunasan berhasil disimpan.');
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->back()->with('error', 'Gagal menyimpan pelunasan: ' . $e->getMessage());
     }
+}
+
+
 }

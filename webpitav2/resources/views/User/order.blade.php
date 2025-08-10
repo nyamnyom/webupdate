@@ -53,9 +53,14 @@
         </div>
 
         <div style="flex: 1; min-width: 250px;">
-            <label>Pengerja:</label><br>
-            <input type="text" name="pengerja" required>
-        </div>
+    <label>Pengerja:</label><br>
+    <select name="pengerja[]" id="select-pengerja" class="form-control" multiple required>
+        @foreach($sales as $s)
+            <option value="{{ $s->username }}">{{ $s->username }}</option>
+        @endforeach
+    </select>
+    <small>Bisa pilih lebih dari satu</small>
+</div>
 
         <div style="flex: 1; min-width: 250px;">
             <label>Tanggal Order (opsional):</label><br>
@@ -201,6 +206,10 @@ function resetInput() {
     $('#barang-diskon').val(0);
     $('#barang-harga').val('');
 }
+$('#select-pengerja').select2({
+    width: '100%',
+    placeholder: "-- Pilih Pengerja --"
+});
 
 function renderDaftar() {
     const tbody = $('#daftar-barang tbody');
