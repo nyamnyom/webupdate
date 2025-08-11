@@ -33,9 +33,15 @@ Route::get('/logout', [LogoutController::class, 'logout']);
 // ADMIN
 Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
 // Route::resource('/admin/user', AdminUserController::class);
+// export import
+Route::post('/admin/barang/import', [AdminBarangController::class, 'importExcel'])->name('barang.import');
+Route::get('/admin/barang/export', [AdminBarangController::class, 'exportExcel'])->name('barang.export');
 Route::resource('/admin/barang', AdminBarangController::class);
 
 
+
+
+Route::get('/admin/api/order-search', [AdminNotaController::class, 'barangAutocomplete']);
 
 Route::get('/admin/api/barang-search', [AdminBarangController::class, 'barangSearch']);
 Route::get('/admin/barang/paket/create', [AdminBarangController::class, 'formPaket']);
@@ -89,9 +95,14 @@ Route::post('/admin/sales/{id}/delete', [AdminSalesController::class, 'destroy']
 
 
 
+
+
+
 // USER
 Route::get('/user/dashboard', [UserDashboardController::class, 'index']);
 Route::get('/user/historynota', [UserNotaHistoryController::class, 'index']);
+//user import
+Route::post('/user/stok/import', [StokController::class, 'importExcel'])->name('user.barang.import');
 
 Route::get('/user/order', [NotaController::class, 'form']);
 Route::post('/user/order', [NotaController::class, 'submit']);

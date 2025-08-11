@@ -30,15 +30,15 @@
         });
     </script>
 @endif
+
 <h2>Buat Order Barang</h2>
 
-<form method="POST" action="{{ url('/admin/order') }}">
+<form method="POST" action="{{ url('/admin/order') }}" id="form-order">
     @csrf
 
-    {{-- Informasi Umum --}}
     <div style="display: flex; flex-wrap: wrap; gap: 20px;">
         <div style="flex: 1; min-width: 250px;">
-            <label>Pilih Toko:</label><br>
+            <label for="select-toko">Pilih Toko:</label>
             <select name="dari_toko" class="form-control" id="select-toko" required>
                 <option value="">-- Pilih Toko --</option>
                 @foreach($toko as $t)
@@ -48,56 +48,56 @@
         </div>
 
         <div style="flex: 1; min-width: 250px;">
-            <label>No Kiriman:</label><br>
-            <input type="text" name="nokiriman" required>
+            <label for="nokiriman">No Kiriman:</label><br>
+            <input type="text" name="nokiriman" id="nokiriman" class="form-control" required>
         </div>
 
         <div style="flex: 1; min-width: 250px;">
-            <label>Pengerja:</label><br>
-            <input type="text" name="pengerja" required>
+            <label for="pengerja">Pengerja:</label><br>
+            <input type="text" name="pengerja" id="pengerja" class="form-control" required>
         </div>
 
         <div style="flex: 1; min-width: 250px;">
-            <label>Tanggal Order (opsional):</label><br>
-            <input type="datetime-local" name="tanggal">
+            <label for="tanggal">Tanggal Order (opsional):</label>
+            <input type="datetime-local" name="tanggal" id="tanggal" class="form-control">
             <small>(Biarkan kosong untuk gunakan tanggal sekarang)</small>
         </div>
     </div>
 
     <hr><br>
 
-    {{-- Input Barang --}}
+    <h4>Tambah Barang</h4>
     <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end;">
-        <div style="flex: 2; min-width: 200px;">
-            <label>Nama Barang:</label><br>
-            <select id="barang-input" class="form-control" style="width: 100%;">
+        <div style="flex: 2; min-width: 220px;">
+            <label for="barang-input">Nama Barang:</label>
+            <select id="barang-input" class="form-control" style="width: 100%;" placeholder="Ketik nama barang...">
                 <option value="">-- Pilih Barang --</option>
             </select>
         </div>
 
+        <div style="flex: 1; min-width: 60px;">
+            <label for="barang-jumlah">Jumlah:</label>
+            <input type="number" id="barang-jumlah" class="form-control" min="0.1" step="0.1" value="1">
+        </div>
+        
         <div style="flex: 1; min-width: 120px;">
-            <label>Jumlah:</label><br>
-            <input type="number" id="barang-jumlah" min="0.1" step="0.1" value="1">
+            <label for="barang-diskon">Diskon (%):</label><br>
+            <input type="number" id="barang-diskon" class="form-control" min="0" max="100" step="1" value="0">
+        </div>
+
+        <div style="flex: 1; min-width: 150px;">
+            <label for="barang-harga">Harga Manual (opsional):</label>
+            <input type="number" id="barang-harga" class="form-control" min="0" step="1" placeholder="Harga satuan">
         </div>
 
         <div style="flex: 1; min-width: 120px;">
-            <label>Diskon (%):</label><br>
-            <input type="number" id="barang-diskon" min="0" max="100" step="1" value="0">
-        </div>
-
-        <div style="flex: 1; min-width: 120px;">
-            <label>Harga Manual (opsional):</label><br>
-            <input type="number" id="barang-harga" min="0" step="1">
-        </div>
-
-        <div style="flex: 1; min-width: 120px;">
-            <button type="button" onclick="tambahBarang()">Tambah</button>
+            <button type="button" class="btn btn-primary" onclick="tambahBarang()">Tambah</button>
         </div>
     </div>
 
     <br><br>
 
-    {{-- Tabel Daftar Barang --}}
+    <h4>Daftar Barang</h4>
     <table border="1" cellpadding="10" cellspacing="0" id="daftar-barang" class="table table-bordered">
         <thead>
             <tr>
@@ -119,30 +119,37 @@
         </tfoot>
     </table><br>
 
-    <button type="submit">Kirim Order</button>
+    <button type="submit" class="btn btn-success">Kirim Order</button>
 </form>
 @endsection
 
 @section('scripts')
+<!-- JQuery & Select2 -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
 let daftarBarang = [];
 
-$(function () {
-    // Select2 Toko
+$(document).ready(function () {
+    // Select2 toko biasa
     $('#select-toko').select2({ width: '100%' });
 
-    // Select2 Barang dengan AJAX
+    // Select2 barang dengan AJAX autocomplete
     $('#barang-input').select2({
         placeholder: "-- Pilih Barang --",
         allowClear: true,
+        
         ajax: {
-            url: "{{ url('/api/order-search') }}",
+            url: "{{ url('/admin/api/order-search') }}",
             dataType: 'json',
             delay: 250,
+            data: function(params) {
+                return {
+                    term: params.term // kata yang diketik
+                };
+            },
             processResults: function (data) {
                 return {
                     results: data.map(item => ({
@@ -150,14 +157,21 @@ $(function () {
                         text: item.label
                     }))
                 };
-            }
+            },
+            cache: true
         }
     });
 
-    // Prevent Enter
-    $('form').on('keydown', function(e) {
+    // Cegah enter submit form saat pilih barang
+    $('#barang-input').on('select2:select', function () {
+        $('#barang-harga').focus();
+    });
+
+    // Cegah enter submit form secara tidak sengaja
+    $('#form-order').on('keydown', function(e) {
         if (e.key === 'Enter' && e.target.tagName.toLowerCase() !== 'textarea') {
             e.preventDefault();
+            return false;
         }
     });
 });
@@ -169,23 +183,38 @@ function tambahBarang() {
     const diskon = parseFloat($('#barang-diskon').val());
     const hargaManual = parseFloat($('#barang-harga').val());
 
-    if (!id || !nama || isNaN(jumlah) || jumlah <= 0 || isNaN(diskon) || diskon < 0 || diskon > 100) {
-        alert("Pastikan semua input valid.");
+    if (!id || !nama) {
+        alert("Pilih barang terlebih dahulu.");
+        return;
+    }
+    if (isNaN(jumlah) || jumlah <= 0) {
+        alert("Jumlah harus lebih dari 0.");
+        return;
+    }
+    if (isNaN(diskon) || diskon < 0 || diskon > 100) {
+        alert("Diskon harus antara 0 - 100.");
         return;
     }
 
+    // Cek duplikat barang di daftar
     if (daftarBarang.some(b => b.id === id)) {
         alert("Barang sudah ada di daftar.");
         return;
     }
 
     if (!isNaN(hargaManual) && hargaManual > 0) {
+        // Harga manual valid, langsung pakai
         daftarBarang.push({ id, nama, jumlah, harga: hargaManual, diskon });
         renderDaftar();
         resetInput();
     } else {
+        // Ambil harga dari server (API barang)
         $.get(`/api/barang/${id}`, function (data) {
             const harga = parseFloat(data.harga);
+            if (isNaN(harga) || harga <= 0) {
+                alert("Harga barang tidak valid.");
+                return;
+            }
             daftarBarang.push({ id, nama, jumlah, harga, diskon });
             renderDaftar();
             resetInput();
@@ -208,8 +237,8 @@ function renderDaftar() {
     let subtotal = 0;
 
     daftarBarang.forEach((b, i) => {
-        const hargaSetelahDiskon = b.harga * (1 - b.diskon / 100);
-        const totalHarga = hargaSetelahDiskon * b.jumlah;
+        const hargaDiskon = b.harga * (1 - b.diskon / 100);
+        const totalHarga = hargaDiskon * b.jumlah;
         subtotal += totalHarga;
 
         tbody.append(`
@@ -220,7 +249,7 @@ function renderDaftar() {
                 <td>${b.harga.toFixed(2)}</td>
                 <td>${b.diskon}%</td>
                 <td>${totalHarga.toFixed(2)}</td>
-                <td><button type="button" onclick="hapus(${i})">Hapus</button></td>
+                <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusBarang(${i})">Hapus</button></td>
             </tr>
             <input type="hidden" name="items[${i}][id]" value="${b.id}">
             <input type="hidden" name="items[${i}][jumlah]" value="${b.jumlah}">
@@ -232,7 +261,7 @@ function renderDaftar() {
     $('#subtotal-text').text(`Rp ${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`);
 }
 
-function hapus(index) {
+function hapusBarang(index) {
     daftarBarang.splice(index, 1);
     renderDaftar();
 }

@@ -1,6 +1,6 @@
 @extends('layouts.user_layout')
 
-@section('title', 'Create Order')
+@section('title', 'Buat Order')
 
 @section('content')
 @if(session('success'))
@@ -30,6 +30,7 @@
         });
     </script>
 @endif
+
 <h2>Buat Order Barang</h2>
 
 <form method="POST" action="{{ url('/user/order') }}">
@@ -53,14 +54,14 @@
         </div>
 
         <div style="flex: 1; min-width: 250px;">
-    <label>Pengerja:</label><br>
-    <select name="pengerja[]" id="select-pengerja" class="form-control" multiple required>
-        @foreach($sales as $s)
-            <option value="{{ $s->username }}">{{ $s->username }}</option>
-        @endforeach
-    </select>
-    <small>Bisa pilih lebih dari satu</small>
-</div>
+            <label>Pengerja:</label><br>
+            <select name="pengerja[]" id="select-pengerja" class="form-control" multiple required>
+                @foreach($sales as $s)
+                    <option value="{{ $s->username }}">{{ $s->username }}</option>
+                @endforeach
+            </select>
+            <small>Bisa pilih lebih dari satu</small>
+        </div>
 
         <div style="flex: 1; min-width: 250px;">
             <label>Tanggal Order (opsional):</label><br>
@@ -140,14 +141,26 @@ $(function () {
     // Select2 Toko
     $('#select-toko').select2({ width: '100%' });
 
-    // Select2 Barang dengan AJAX
+    // Select2 Pengerja multiple
+    $('#select-pengerja').select2({
+        width: '100%',
+        placeholder: "-- Pilih Pengerja --"
+    });
+
+    // Select2 Barang dengan AJAX (user API endpoint)
     $('#barang-input').select2({
         placeholder: "-- Pilih Barang --",
         allowClear: true,
+        
         ajax: {
-            url: "{{ url('/api/order-search') }}",
+            url: "{{ url('api/order-search') }}", // sesuaikan endpoint user API
             dataType: 'json',
             delay: 250,
+            data: function(params) {
+                return {
+                    term: params.term
+                };
+            },
             processResults: function (data) {
                 return {
                     results: data.map(item => ({
@@ -155,11 +168,12 @@ $(function () {
                         text: item.label
                     }))
                 };
-            }
+            },
+            cache: true
         }
     });
 
-    // Prevent Enter
+    // Prevent Enter submit di form selain textarea
     $('form').on('keydown', function(e) {
         if (e.key === 'Enter' && e.target.tagName.toLowerCase() !== 'textarea') {
             e.preventDefault();
@@ -189,7 +203,7 @@ function tambahBarang() {
         renderDaftar();
         resetInput();
     } else {
-        $.get(`/api/barang/${id}`, function (data) {
+        $.get(`/user/api/barang/${id}`, function (data) {
             const harga = parseFloat(data.harga);
             daftarBarang.push({ id, nama, jumlah, harga, diskon });
             renderDaftar();
@@ -206,10 +220,6 @@ function resetInput() {
     $('#barang-diskon').val(0);
     $('#barang-harga').val('');
 }
-$('#select-pengerja').select2({
-    width: '100%',
-    placeholder: "-- Pilih Pengerja --"
-});
 
 function renderDaftar() {
     const tbody = $('#daftar-barang tbody');

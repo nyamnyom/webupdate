@@ -132,29 +132,29 @@ $toko = DB::table('toko')->get();
 
 
     public function barangAutocomplete(Request $request)
-    {
-        $keyword = $request->get('term');
-        $keywords = array_filter(explode(' ', trim(strtolower($keyword))));
+{
+    $keyword = $request->get('term');
+    $keywords = array_filter(explode(' ', trim(strtolower($keyword))));
 
-        $result = DB::table('barang')
-            ->where(function ($q) use ($keywords) {
-                foreach ($keywords as $word) {
-                    $q->whereRaw('LOWER(Nama_Barang) LIKE ?', ["%$word%"]);
-                }
-            })
-            ->limit(10)
-            ->get();
+    $result = DB::table('barang')
+        ->where(function ($q) use ($keywords) {
+            foreach ($keywords as $word) {
+                $q->whereRaw('LOWER(nama) LIKE ?', ["%$word%"]);
+            }
+        })
+        ->limit(10)
+        ->get();
 
-        $data = [];
-        foreach ($result as $r) {
-            $data[] = [
-                'label' => $r->nama,
-                'id' => $r->id
-            ];
-        }
-
-        return response()->json($data);
+    $data = [];
+    foreach ($result as $r) {
+        $data[] = [
+            'label' => $r->nama,
+            'id' => $r->id,
+        ];
     }
+
+    return response()->json($data);
+}
     private function logBarang($idBarang, $namaBarang, $keterangan, $in = 0, $out = 0)
     {
         $username = session('username') ?? 'unknown';

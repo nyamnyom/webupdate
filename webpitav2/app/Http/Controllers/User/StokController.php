@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\User;
 
+use App\Exports\BarangExport;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class StokController extends Controller
 {
@@ -269,6 +271,58 @@ private function logBarang($barangId, $namaBarang, $keterangan, $stokIn = 0, $st
         'created_at' => now()
     ]);
 }
+    public function exportExcel()
+{
+    $barang = DB::table('barang')
+        ->select('id', 'nama as nama_barang', 'stok', 'harga')
+        ->get();
 
+    $tgl = date('Y-m-d'); // format: 2025-08-11
+
+    return Excel::download(new BarangExport($barang), "barang_{$tgl}.xlsx");
+}
+
+// ✅ Import Barang dari Excel
+public function importExcel(Request $request)
+{
+    $request->validate([
+        'file' => 'required|mimes:xlsx,xls'
+        ]);
+
+        $path = $request->file('file')->getRealPath();
+        $data = Excel::toArray([], $path);
+
+        if (!empty($data) && count($data[0]) > 0) {
+            foreach ($data[0] as $index => $row) {
+                if ($index == 0) continue; // skip header
+
+                // Validasi kolom wajib
+                if (!isset($row[0], $row[1], $row[2], $row[3])) {
+                    continue;
+                }
+
+                $id = trim($row[0]);
+                $nama = trim($row[1]);
+                $stok = (int) $row[2];
+                $harga = (float) $row[3];
+
+                // Simpan atau update barang
+                DB::table('barang')->updateOrInsert(
+                    ['id' => $id],
+                    ['nama' => $nama, 'stok' => $stok, 'harga' => $harga, 'tipe' => 'barang']
+                );
+                DB::table('user_activity_log')->insert([
+                    'user_id' => session('user_id'),
+                    'aktivitas' => "Mengimpor barang dengan ID: {$id}, Nama: {$nama}",
+                    'created_at' => now()
+                ]);
+                DB::table('log_barang')->insert([
+                    ['barang_id' => $id, 'nama_barang' => $nama, 'keterangan' => 'Import dari Excel', 'stok_in' => $stok, 'stok_out' => 0, 'stok_after' => $stok, 'by_who' => session('username')]
+                ]);
+            }
+        }
+
+        return redirect('/user/stok')->with('success', 'Data barang berhasil diimport.');
+    }
 
 }
